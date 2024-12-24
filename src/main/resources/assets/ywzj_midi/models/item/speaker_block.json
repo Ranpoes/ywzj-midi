@@ -1,0 +1,50 @@
+{
+  "credit": "Made with Blockbench",
+  "texture_size": [64, 64],
+  "textures": {
+    "4": "ywzj_midi:block/speaker_block/face",
+    "5": "ywzj_midi:block/speaker_block/texture",
+    "particle": "ywzj_midi:block/speaker_block/face"
+  },
+  "elements": [
+    {
+      "from": [1, 0, 1],
+      "to": [15, 21, 15],
+      "faces": {
+        "north": {"uv": [0, 0, 16, 16], "texture": "#4"},
+        "east": {"uv": [3.5, 0, 7, 5.25], "texture": "#5"},
+        "south": {"uv": [0, 5.25, 3.5, 10.5], "texture": "#5"},
+        "west": {"uv": [3.5, 5.25, 7, 10.5], "texture": "#5"},
+        "up": {"uv": [10.5, 3.5, 7, 0], "texture": "#5"},
+        "down": {"uv": [10.5, 3.5, 7, 7], "texture": "#5"}
+      }
+    }
+  ],
+  "display": {
+    "thirdperson_righthand": {
+      "scale": [0.5, 0.5, 0.5]
+    },
+    "thirdperson_lefthand": {
+      "scale": [0.5, 0.5, 0.5]
+    },
+    "firstperson_righthand": {
+      "scale": [0.5, 0.5, 0.5]
+    },
+    "firstperson_lefthand": {
+      "scale": [0.5, 0.5, 0.5]
+    },
+    "ground": {
+      "translation": [0, 2, 0],
+      "scale": [0.5, 0.5, 0.5]
+    },
+    "gui": {
+      "rotation": [-160, -30, 180],
+      "translation": [0, -1.5, 0],
+      "scale": [0.6, 0.6, 0.6]
+    },
+    "fixed": {
+      "translation": [0, -1.25, 0],
+      "scale": [0.7, 0.7, 0.7]
+    }
+  }
+}

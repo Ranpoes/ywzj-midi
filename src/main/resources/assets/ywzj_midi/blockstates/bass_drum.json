@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "ywzj_midi:block/bass_drum"},
+    "facing=south": { "model":"ywzj_midi:block/bass_drum", "y" : 180},
+    "facing=west": { "model":"ywzj_midi:block/bass_drum", "y" : 270},
+    "facing=east": { "model":"ywzj_midi:block/bass_drum", "y" : 90}
+  }
+}

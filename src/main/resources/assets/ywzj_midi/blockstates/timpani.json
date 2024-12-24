@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "ywzj_midi:block/timpani"},
+    "facing=south": { "model":"ywzj_midi:block/timpani", "y" : 180},
+    "facing=west": { "model":"ywzj_midi:block/timpani", "y" : 270},
+    "facing=east": { "model":"ywzj_midi:block/timpani", "y" : 90}
+  }
+}

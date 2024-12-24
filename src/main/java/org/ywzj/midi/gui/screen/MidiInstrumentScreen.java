@@ -1,0 +1,173 @@
+package org.ywzj.midi.gui.screen;
+
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import org.ywzj.midi.gui.widget.CommonButton;
+import org.ywzj.midi.gui.widget.SelectableButton;
+import org.ywzj.midi.gui.widget.SelectionList;
+import org.ywzj.midi.gui.widget.SelectionListButton;
+import org.ywzj.midi.instrument.Instrument;
+import org.ywzj.midi.instrument.player.InstrumentMidiPlayer;
+import org.ywzj.midi.instrument.receiver.MidiReceiver;
+import org.ywzj.midi.storage.MidiFiles;
+import org.ywzj.midi.util.ComponentUtils;
+import org.ywzj.midi.util.MathUtils;
+
+import javax.sound.midi.MidiDevice;
+import javax.sound.midi.MidiSystem;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+@OnlyIn(Dist.CLIENT)
+public abstract class MidiInstrumentScreen extends Screen {
+
+    private boolean firstRender = true;
+    protected final Instrument instrument;
+    protected final Vec3 pos;
+    protected MidiDevice.Info[] midiDeviceInfo;
+    private boolean isConnected = false;
+    protected MidiReceiver receiver;
+    protected InstrumentMidiPlayer midiPlayer;
+    protected CommonButton deviceButton;
+    protected SelectableButton.LinkedSelections<MidiDevice.Info> deviceSelections;
+    protected SelectableButton<MidiDevice.Info> deviceSelectButton;
+    protected CommonButton midPlayButton;
+    protected List<SelectionList.Selection<Path>> midSelections = new ArrayList<>();
+    protected SelectionListButton<Path> midSelectButton;
+    protected List<SelectionList.Selection<Integer>> variantSelections = new ArrayList<>();
+    protected SelectionListButton<Integer> variantSelectButton;
+    protected boolean needSave = false;
+
+    public MidiInstrumentScreen(Instrument instrument, Vec3 pos, Component titleIn) {
+        super(titleIn);
+        this.instrument = instrument;
+        this.pos = pos;
+        this.midiPlayer = new InstrumentMidiPlayer(this);
+        this.receiver = instrument.receiver(Minecraft.getInstance().player, pos);
+    }
+
+    public void closeMidiReceiver() {
+        if (receiver != null) {
+            receiver.close();
+        }
+    }
+
+    @Override
+    protected void init() {
+        midiDeviceInfo = MidiSystem.getMidiDeviceInfo();
+        List<Path> midPaths = MidiFiles.getMids();
+        List<SelectableButton.Selection<MidiDevice.Info>> midiDeviceSelections = new ArrayList<>();
+        Arrays.stream(midiDeviceInfo).forEach(info -> midiDeviceSelections.add(new SelectableButton.Selection<>(info, info.getName() + " " + info.getDescription())));
+        midSelections.clear();
+        midPaths.forEach(midPath -> midSelections.add(new SelectionList.Selection<>(midPath, midPath.getFileName().toString())));
+        if (firstRender) {
+            firstRender = false;
+            deviceSelections = new SelectableButton.LinkedSelections<>(midiDeviceSelections);
+            midSelectButton = new SelectionListButton<>(width/2 + 150, height/2 - 80, -1, 20, ComponentUtils.translatable("ui.ywzj_midi.select_mid"), midSelections, this, ComponentUtils.translatable("info.ywzj_midi.suggestion_mid"));
+            instrument.getAllVariants().forEach(v -> variantSelections.add(new SelectionList.Selection<>(v.getIndex(), v.getName())));
+            variantSelectButton = new SelectionListButton<>(width/2 + 150, height/2 - 20, -1, 20, ComponentUtils.translatable("ui.ywzj_midi.select"), variantSelections, this, ComponentUtils.EMPTY);
+            variantSelectButton.setValue(0);
+        } else {
+            deviceSelections.update(midiDeviceSelections);
+            midSelectButton.updatePos(width/2 + 150, height/2 - 80);
+            midSelectButton.updateSelections(midSelections);
+            variantSelectButton.updatePos(width/2 + 150, height/2 - 20);
+        }
+        deviceButton = new CommonButton(width/2 - 50, height/2, 100, 20, ComponentUtils.translatable("ui.ywzj_midi.open_midi_device"), (button) -> {
+            if (isConnected) {
+                receiver.closeDevice();
+                isConnected = false;
+                button.setMessage(ComponentUtils.translatable("ui.ywzj_midi.open_midi_device"));
+                Minecraft.getInstance().player.sendSystemMessage(ComponentUtils.translatable("info.ywzj_midi.midi_disconnected"));
+            } else {
+                if (midiDeviceInfo.length == 0) {
+                    return;
+                }
+                if (receiver.initDevice(deviceSelectButton.getValue())) {
+                    isConnected = true;
+                    button.setMessage(ComponentUtils.translatable("ui.ywzj_midi.midi_connected"));
+                    Minecraft.getInstance().player.sendSystemMessage(ComponentUtils.translatable("info.ywzj_midi.connect_succeed"));
+                } else {
+                    Minecraft.getInstance().player.sendSystemMessage(ComponentUtils.translatable("info.ywzj_midi.connect_failed"));
+                }
+            }
+        });
+        deviceSelectButton = new SelectableButton<>(width/2, height/2 + 30, -1, 20, deviceSelections);
+        String info = midiPlayer.isPlaying() ? "ui.ywzj_midi.playing" : "ui.ywzj_midi.open_mid_file";
+        midPlayButton = new CommonButton(width/2 + 150 - 40, height/2 - 50, 80, 20, ComponentUtils.translatable(info), (button) -> {
+            if (midiPlayer.isPlaying()) {
+                midiPlayer.stopPlay();
+                button.setMessage(ComponentUtils.translatable("ui.ywzj_midi.open_mid_file"));
+            } else {
+                if (midSelectButton.getValue() == null) {
+                    return;
+                }
+                midiPlayer.open(midSelectButton.getValue().toFile());
+                midiPlayer.getChannels().forEach(channel -> {
+                    channel.use(instrument);
+                    channel.volume(1);
+                    channel.registerReceiver(receiver.getPlayer());
+                });
+                midiPlayer.play(0);
+                button.setMessage(ComponentUtils.translatable("ui.ywzj_midi.playing"));
+            }
+        });
+        addRenderableWidget(deviceButton);
+        addRenderableWidget(deviceSelectButton);
+        addRenderableWidget(midPlayButton);
+        addRenderableWidget(midSelectButton);
+        addRenderableWidget(variantSelectButton);
+    }
+
+    public void callbackPlayButton() {
+        midPlayButton.setMessage(ComponentUtils.translatable("ui.ywzj_midi.open_mid_file"));
+    }
+
+    @Override
+    public void onClose() {
+        super.onClose();
+        if (!needSave && receiver != null) {
+            receiver.close();
+        }
+    }
+
+    @Override
+    public boolean isPauseScreen() {
+        return false;
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        boolean keyPressed = super.keyPressed(keyCode, scanCode, modifiers);
+        if (keyPressed || getFocused() != null)
+            return keyPressed;
+        InputConstants.Key mouseKey = InputConstants.getKey(keyCode, scanCode);
+        if (this.minecraft.options.keyInventory.isActiveAndMatches(mouseKey)) {
+            this.onClose();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public void tick() {
+        if (instrument.isPortable()) {
+            return;
+        }
+        Player player = Minecraft.getInstance().player;
+        if (player != null) {
+            if (!player.isAlive() || MathUtils.distance(player.getX(), player.getY(), player.getZ(), pos.x, pos.y, pos.z) > 3) {
+                this.onClose();
+            }
+        }
+    }
+
+}

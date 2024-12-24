@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "package": "org.ywzj.midi.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "minVersion": "0.8",
+  "refmap": "ywzj_midi.refmap.json",
+  "client": [
+    "HumanoidModelMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -1,0 +1,8 @@
+ {
+   "variants": {
+     "facing=north": { "model": "ywzj_midi:block/piano_bench_block"},
+     "facing=south": { "model":"ywzj_midi:block/piano_bench_block", "y" : 180},
+     "facing=west": { "model":"ywzj_midi:block/piano_bench_block", "y" : 270},
+     "facing=east": { "model":"ywzj_midi:block/piano_bench_block", "y" : 90}
+   }
+ }
